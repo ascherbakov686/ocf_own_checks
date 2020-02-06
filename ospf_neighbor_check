@@ -1,0 +1,76 @@
+#!/bin/sh
+
+#######################################################################
+# Initialization:
+VTYSH=/usr/bin/vtysh
+USAGE="usage: $0 {start|stop|status|monitor|validate-all|meta-data}";
+
+#######################################################################
+
+meta_data() {
+cat <<END
+<?xml version="1.0"?>
+<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
+<resource-agent name="ospf_neighbor_check">
+<version>1.0</version>
+
+<longdesc lang="en">
+OSPF Neighbor Check.
+</longdesc>
+<shortdesc lang="en">OSPF Neighbor Check</shortdesc>
+
+<parameters>
+
+<parameter name="iface" unique="1" required="1">
+<longdesc lang="en">
+OSPF neighbor IFACE, example docker_gwbridge.
+</longdesc>
+<shortdesc lang="en">OSPF neighbor IFACE</shortdesc>
+<content type="string" default="" />
+</parameter>
+
+</parameters>
+
+<actions>
+<action name="monitor" depth="0"  timeout="20s" interval="5s" />
+<action name="validate-all"  timeout="20s" />
+<action name="meta-data"  timeout="5s" />
+</actions>
+</resource-agent>
+END
+exit 0
+}
+
+usage() {
+  echo $USAGE >&2
+}
+
+
+status_neighbor_check() {
+    rc=`$VTYSH -c "sh ip ospf neighbor $OCF_RESKEY_iface" | grep 'Full/' | wc -l`
+    if [ $rc -eq 0 ]; then
+        return 7
+    fi
+        return 0
+}
+
+if
+  [ $# -ne 1 ]
+then
+  usage
+  exit 2
+fi
+
+
+case $1 in
+  status)	status_neighbor_check;;
+  monitor)	status_neighbor_check;;
+  validate-all)	check_binary $VTYSH
+		exit 0;;
+  meta-data)	meta_data;;
+  usage)	usage; exit 0;;
+  *)		usage
+ 		exit 2
+ 		;;
+esac
+
